@@ -1,0 +1,17 @@
+name: Keepalive Workflow
+
+on:
+  schedule:
+    # Minden hónap 1-jén és 15-én fut le éjfélkor
+    - cron: '0 0 1,15 * *'
+  workflow_dispatch: # Lehetővé teszi, hogy kézzel is elindítsd tesztelésre
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keepalive Action
+        uses: gautamkrishnar/keepalive-workflow@v1
