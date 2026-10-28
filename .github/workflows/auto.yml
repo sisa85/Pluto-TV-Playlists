@@ -2,7 +2,7 @@ name: Auto Pluto Update
 
 on:
   schedule:
-    - cron: '40 * * * *'
+    - cron: '17 * * * *'  # Az óra 17. percében fut, elkerülve a szerveroldali torlódást
   workflow_dispatch:
 
 jobs:
@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 18
+          node-version: 20
 
       - name: Install dependencies
         run: npm install
@@ -24,10 +24,41 @@ jobs:
       - name: Run scraper
         run: node index.js
 
-      - name: Commit files
+      - name: Verify and Commit files
         run: |
-          git config --global user.name "github-actions"
-          git config --global user.email "actions@github.com"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@://github.com"
+          
+          # Biztonsági ellenőrzés a te 4 fő régiódra
+          REGIONS=("us" "ca" "uk" "de")
+          ERROR_FOUND=0
+
+          for REG in "${REGIONS[@]}"; do
+            FILE="output/plutotv_${REG}.m3u8"
+            
+            if [ ! -f "$FILE" ]; then
+              echo "HIBA: A(z) $FILE nem is létezik!"
+              ERROR_FOUND=1
+            else
+              # Megnézzük a fájl méretét bájtban
+              FILE_SIZE=$(stat -c%s "$FILE")
+              echo "Régió: $REG | Fájlméret: $FILE_SIZE bájt"
+              
+              # Ha a lista kisebb, mint 15 KB (15360 bájt), akkor az biztosan hibás/üres
+              if [ "$FILE_SIZE" -lt 15360 ]; then
+                echo "KRITIKUS HIBA: A(z) $REG lista túl kicsi. Valószínűleg 404-es geoblokk történt."
+                ERROR_FOUND=1
+              fi
+            fi
+          done
+
+          if [ "$ERROR_FOUND" -eq 1 ]; then
+            echo "A mentést BIZTONSÁGI OKOKBÓL MEGSZAKÍTJUK. Nem írjuk felül a korábbi jól működő listákat a GitHubon."
+            exit 1
+          fi
+
+          # Ha minden régió mérete megfelelő, csak akkor mentünk és töltünk fel
           git add .
           git commit -m "Auto update playlist" || echo "No changes"
           git push --force
+
