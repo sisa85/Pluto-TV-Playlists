@@ -2,7 +2,7 @@ name: Auto Pluto Update
 
 on:
   schedule:
-    - cron: '16 * * * *'  # Az óra 16. percében fut, elkerülve a szerveroldali torlódást
+    - cron: '23 */2 * * *'  # Minden páros óra 23. percében fut, elkerülve a szerveroldali torlódást és a tiltást
   workflow_dispatch:
 
 jobs:
